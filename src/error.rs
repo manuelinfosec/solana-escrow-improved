@@ -7,6 +7,8 @@ use solana_program::program_error::ProgramError;
 pub enum EscrowError {
     /// Invalid Instruction
     InvalidInstruction,
+    /// Not Rent Exempt
+    NotRentExampt,
 }
 
 // Implement Display for EscrowError
@@ -14,6 +16,7 @@ impl fmt::Display for EscrowError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             EscrowError::InvalidInstruction => write!(f, "Invalid Instruction"),
+            EscrowError::NotRentExampt => write!(f, "Not rent exempt")
         }
     }
 }
