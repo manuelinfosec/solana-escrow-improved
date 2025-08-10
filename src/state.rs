@@ -87,7 +87,7 @@ impl Pack for Escrow {
     }
 
     // Alternative
-    // fn pack_into_slic(&self, dst: &mut [u8]) {
+    // fn pack_into_slice(&self, dst: &mut [u8]) {
     //     // Safety check: Make sure the buffer is big enough
     //     assert!(dst.len() >= Escrow::LEN, "dst too small");
 

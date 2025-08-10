@@ -2,15 +2,10 @@
 
 use crate::instruction::EscrowInstruction;
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
-    entrypoint::ProgramResult,
-    msg,
-    program_error::ProgramError,
-    pubkey::Pubkey,
-    sysvar::{rent::Rent, Sysvar},
+    account_info::{next_account_info, AccountInfo}, entrypoint::ProgramResult, msg, program_error::ProgramError, program_pack::Pack, pubkey::Pubkey, sysvar::{rent::Rent, Sysvar}
 };
 
-use crate::error::EscrowError;
+use crate::{error::EscrowError, state::Escrow};
 
 pub struct Processor;
 
@@ -61,13 +56,27 @@ impl Processor {
             return Err(ProgramError::IncorrectProgramId);
         }
 
-        // Account 3: ???
+        // Account 3: where does the escrow account come from???
         let escrow_account = next_account_info(account_info_iter)?;
 
         let rent = Rent::from_account_info(next_account_info(account_info_iter)?)?;
         if !rent.is_exempt(escrow_account.lamports(), escrow_account.data_len()) {
             return Err(EscrowError::NotRentExampt.into())
         }
+
+        // unpack escrow information from slice
+        let mut escrow_info: Escrow = Escrow::unpack_unchecked(&escrow_account.try_borrow_data()?)?;
+
+        escrow_info.is_initialized = true;
+        escrow_info.initializer_pubkey = *initializer.key;
+        escrow_info.temp_token_account_pubkey = *temp_token_account.key;
+        escrow_info.initializer_token_to_receive_account_pubkey = *token_to_receive_account.key;
+        escrow_info.expected_amount = amount;
+
+        Escrow::pack(escrow_info, &mut escrow_account.try_borrow_mut_data()?)?;
+
+        // generate a Program Derived Address with a seed that will be used when trying to sign
+        let (pda, _bump_seed) = Pubkey::find_program_address(&[b"escrow"], program_id);
 
 
         Ok(())
