@@ -2,8 +2,16 @@
 
 use crate::instruction::EscrowInstruction;
 use solana_program::{
-    account_info::{next_account_info, AccountInfo}, entrypoint::ProgramResult, msg, program_error::ProgramError, program_pack::Pack, pubkey::Pubkey, sysvar::{rent::Rent, Sysvar}
+    account_info::{next_account_info, AccountInfo},
+    entrypoint::ProgramResult,
+    msg,
+    program::invoke,
+    program_error::ProgramError,
+    program_pack::Pack,
+    pubkey::Pubkey,
+    sysvar::{rent::Rent, Sysvar},
 };
+use spl_token;
 
 use crate::{error::EscrowError, state::Escrow};
 
@@ -61,7 +69,7 @@ impl Processor {
 
         let rent = Rent::from_account_info(next_account_info(account_info_iter)?)?;
         if !rent.is_exempt(escrow_account.lamports(), escrow_account.data_len()) {
-            return Err(EscrowError::NotRentExampt.into())
+            return Err(EscrowError::NotRentExampt.into());
         }
 
         // unpack escrow information from slice
@@ -78,6 +86,36 @@ impl Processor {
         // generate a Program Derived Address with a seed that will be used when trying to sign
         let (pda, _bump_seed) = Pubkey::find_program_address(&[b"escrow"], program_id);
 
+        // Account 4: The token program
+        let token_program = next_account_info(account_info_iter)?;
+
+        // Create the transaction to transfer token account ownership
+        // Signature Extension: Be careful what you account you forward to CPI as signers
+        let owner_change_ix = spl_token::instruction::set_authority(
+            // token program ID
+            token_program.key,
+            // account to be transferred from Alice to Escrow
+            temp_token_account.key,
+            // Account to be new authority Public Derived Address of the Escrow
+            Some(&pda),
+            // Instruction type
+            spl_token::instruction::AuthorityType::AccountOwner,
+            // Account owner's public key
+            initializer.key,
+            // signer public key
+            &[&initializer.key],
+        )?;
+
+        msg!("Calling the token program to transfer token account ownership...");
+
+        invoke(
+            &owner_change_ix,
+            &[
+                temp_token_account.clone(),
+                initializer.clone(),
+                token_program.clone(),
+            ],
+        )?;
 
         Ok(())
     }

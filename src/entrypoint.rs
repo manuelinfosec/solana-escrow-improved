@@ -1,8 +1,13 @@
 // entrypoint to the program
 
+// ignore entrypoing macro checks
+#![allow(unexpected_cfgs)]
+
 use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult, msg, pubkey::Pubkey,
 };
+
+use crate::processor::Processor;
 
 // Defines the entrypoint to the solana program
 entrypoint!(process_instruction);
@@ -13,10 +18,12 @@ fn process_instruction(
     instruction_data: &[u8],
 ) -> ProgramResult {
     msg!(
-        "process_instruction: {}: {} accounts, data={:?}",
+        "process_instruction: {}: {:?} accounts, data={:?}",
         program_id,
-        accounts.len(),
+        accounts,
         instruction_data
     );
+    Processor::process(program_id, accounts, instruction_data)?;
+
     Ok(())
 }
