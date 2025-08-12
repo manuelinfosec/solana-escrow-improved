@@ -30,3 +30,4 @@ Step 3: Trusted third-party sends asset X to Bob and sends asset Y to Alice.
 ![alt text](https://paulx.dev/assets/img/escrow-sketch-1.6df070a8.png)
 
 
+## Still an incomplete project, because I couldn't get `cargo build-bpf` to work, lol. You wanna contribute? Reach out on ![Telegram](https://t.me/manuelinfosec/)
